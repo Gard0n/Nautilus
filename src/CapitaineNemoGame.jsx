@@ -330,6 +330,9 @@ const ROLE_ACTIONS = [
   },
 ];
 
+const MAKE_WEBHOOK_URL =
+  "https://hook.eu1.make.com/eek98jenyfdixidcetyb9ff3d4rrqcrp";
+
 const DIRECTIVES = [
   {
     id: "pressure",
@@ -357,12 +360,57 @@ const DIRECTIVES = [
   },
 ];
 
+const MISSIONS = [
+  {
+    id: "mission-1",
+    level: 1,
+    label: "Stabiliser la pression",
+    description: "Terminer un tour avec une pression ≤ 35.",
+    rewardXp: 12,
+    check: (stats) => stats.pressure <= 35,
+  },
+  {
+    id: "mission-2",
+    level: 2,
+    label: "Réconforter l'équipage",
+    description: "Atteindre un moral ≥ 70.",
+    rewardXp: 14,
+    check: (stats) => stats.morale >= 70,
+  },
+  {
+    id: "mission-3",
+    level: 3,
+    label: "Renforcer la coque",
+    description: "Monter la coque à ≥ 85.",
+    rewardXp: 16,
+    check: (stats) => stats.hull >= 85,
+  },
+  {
+    id: "mission-4",
+    level: 4,
+    label: "Rester opérationnel",
+    description: "Maintenir l'énergie ≥ 75.",
+    rewardXp: 18,
+    check: (stats) => stats.energy >= 75,
+  },
+  {
+    id: "mission-5",
+    level: 5,
+    label: "Préserver l'équilibre",
+    description: "Aucune statistique sous 45.",
+    rewardXp: 20,
+    check: (stats) =>
+      Object.values(stats).every((value) => typeof value === "number" && value >= 45),
+  },
+];
+
 const INCIDENTS = [
   {
     id: "condensation",
     title: "Incident — Condensation critique",
     prompt:
       "Une fuite de condensation menace l'atelier. L'eau s'infiltre trop vite.",
+    trigger: (stats) => stats.hull <= 55,
     options: [
       {
         label: "Sceller immédiatement",
@@ -381,6 +429,7 @@ const INCIDENTS = [
     title: "Incident — Chant abyssal",
     prompt:
       "Un chant grave traverse la coque. Certains membres paniquent.",
+    trigger: (stats) => stats.pressure >= 70,
     options: [
       {
         label: "Écouter et analyser",
@@ -399,6 +448,7 @@ const INCIDENTS = [
     title: "Incident — Banc lumineux",
     prompt:
       "Un banc bioluminescent entoure le Nautilus. L'effet est hypnotique.",
+    trigger: (stats) => stats.morale <= 45,
     options: [
       {
         label: "Suivre la lueur",
@@ -417,6 +467,7 @@ const INCIDENTS = [
     title: "Incident — Bruit dans les turbines",
     prompt:
       "Un cliquetis irrégulier résonne. L'Ingénieur demande une décision rapide.",
+    trigger: (stats) => stats.energy <= 45,
     options: [
       {
         label: "Arrêt contrôlé",
@@ -471,6 +522,70 @@ const matchesDirective = (action, directive) => {
   return typeof delta === "number" && delta * directive.direction > 0;
 };
 
+const pickIncident = (stats, incidentIndex) => {
+  const matching = INCIDENTS.filter((incident) =>
+    incident.trigger ? incident.trigger(stats) : true
+  );
+  const pool = matching.length ? matching : INCIDENTS;
+  return pool[incidentIndex % pool.length];
+};
+
+const getActiveMission = (level) =>
+  MISSIONS.find((mission) => mission.level === level);
+
+const evaluateOutcome = (stats, unlockedChapters) => {
+  if (stats.hull <= 0) {
+    return {
+      status: "lose",
+      reason: "La coque a cédé. Le Nautilus doit remonter en urgence.",
+    };
+  }
+  if (stats.energy <= 0) {
+    return {
+      status: "lose",
+      reason: "L'énergie est tombée à zéro. Le Nautilus dérive.",
+    };
+  }
+  if (stats.morale <= 0) {
+    return {
+      status: "lose",
+      reason: "Le moral s'effondre. L'équipage refuse d'avancer.",
+    };
+  }
+  if (stats.pressure >= 100) {
+    return {
+      status: "lose",
+      reason: "La pression atteint un niveau critique. La mission s'arrête.",
+    };
+  }
+  if (unlockedChapters.length >= STORY.length) {
+    return {
+      status: "win",
+      reason: "Tous les fragments sont révélés. Vous terminez la mission.",
+    };
+  }
+  return null;
+};
+
+const notifyAccess = async (payload) => {
+  try {
+    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+      const blob = new Blob([JSON.stringify(payload)], {
+        type: "application/json",
+      });
+      const queued = navigator.sendBeacon(MAKE_WEBHOOK_URL, blob);
+      if (queued) return;
+    }
+    await fetch(MAKE_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.warn("Webhook Make non disponible", error);
+  }
+};
+
 function RoleCard({ role, active, onSelect, delay = 0 }) {
   const Icon = role.icon;
   return (
@@ -500,7 +615,7 @@ function RoleCard({ role, active, onSelect, delay = 0 }) {
 function StatLine({ label, value }) {
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <div className="flex items-center justify-between text-xs text-white/60">
         <span>{label}</span>
         <span>{value}%</span>
       </div>
@@ -519,6 +634,18 @@ function AccessGate({ onSubmit }) {
     lastName.trim().length > 1 &&
     email.includes("@") &&
     email.includes(".");
+
+  const handleSubmit = () => {
+    const payload = {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      createdAt: new Date().toISOString(),
+      source: "nautilus-web",
+    };
+    notifyAccess(payload);
+    onSubmit(payload);
+  };
 
   return (
     <div className="min-h-screen ocean-skin ocean-bg text-foreground relative overflow-hidden">
@@ -542,19 +669,19 @@ function AccessGate({ onSubmit }) {
           </div>
         </div>
 
-        <section className="mx-auto max-w-6xl px-4 py-12">
-          <div className="grid gap-10 lg:grid-cols-[1.2fr,0.8fr] items-center">
+        <section className="mx-auto max-w-6xl px-4 py-10 space-y-8">
+          <div className="grid gap-8 lg:grid-cols-[1.1fr,0.9fr] items-start">
             <div className="space-y-6">
               <Badge className="rounded-full bg-cyan-200/20 text-cyan-50">
                 Expédition 20 000 lieues
               </Badge>
               <h1 className="text-4xl font-semibold leading-tight">
-                Entrez dans la salle des décisions du Nautilus.
+                Embarquez à bord du Nautilus
               </h1>
               <p className="text-lg text-white/70">
-                Une expérience solo moderne, inspirée de Jules Verne. Chaque
-                action déclenche une réaction d'équipage, chaque niveau dévoile
-                une nouvelle partie de l'histoire.
+                Recevez des rapports secrets, prenez des décisions critiques,
+                et révélez l'histoire chapitre après chapitre. Une expérience
+                narrative moderne, pensée mobile-first.
               </p>
 
               <div className="flex flex-wrap gap-3">
@@ -564,11 +691,11 @@ function AccessGate({ onSubmit }) {
                 </div>
                 <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm">
                   <Waves className="h-4 w-4 text-cyan-200" />
-                  Hub tactique en continu
+                  Rapports immersifs
                 </div>
                 <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm">
                   <Sparkles className="h-4 w-4 text-cyan-200" />
-                  Histoire débloquée par niveau
+                  Progression narrative
                 </div>
               </div>
 
@@ -594,15 +721,58 @@ function AccessGate({ onSubmit }) {
               </div>
             </div>
 
-            <Card className="rounded-3xl ocean-card text-white shadow-xl shadow-black/30 backdrop-blur">
+            <Card className="rounded-3xl ocean-card text-white shadow-xl shadow-black/30 backdrop-blur card-animate">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center justify-between text-xs text-white/60">
+                  <span>Aperçu — Rapport du Nautilus</span>
+                  <span>Jour 1</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold">Bienvenue à bord, Navigateur.</p>
+                  <Badge
+                    variant="outline"
+                    className="rounded-full border-white/20 text-white/80"
+                  >
+                    Curiosité : Intrépide
+                  </Badge>
+                </div>
+                <p className="text-sm text-white/70 leading-relaxed">
+                  À 1320 mètres, nos capteurs ont détecté un signal lumineux
+                  dans l'obscurité. Navigateur, calculez une route d'évitement :
+                  les courants se renforcent à l'est. Mission : identifiez
+                  l'origine du signal et choisissez votre action.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm">
+                    <p className="text-xs text-white/60">Classement</p>
+                    <p className="font-semibold">Top 22%</p>
+                    <p className="text-xs text-white/50">Basé sur la curiosité</p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm">
+                    <p className="text-xs text-white/60">Progression</p>
+                    <p className="font-semibold">Moussaillon → Officier</p>
+                    <p className="text-xs text-white/50">
+                      3 missions restantes
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
+            <Card
+              id="embarquer"
+              className="rounded-3xl ocean-card text-white shadow-xl shadow-black/30 backdrop-blur"
+            >
               <CardContent className="p-6 space-y-4">
                 <div className="space-y-1">
-                  <p className="text-sm text-cyan-100/80">Accès à bord</p>
+                  <p className="text-sm text-cyan-100/80">Embarquer maintenant</p>
                   <h2 className="text-2xl font-semibold">
-                    Identifiez-vous pour embarquer
+                    Identifiez-vous pour recevoir le premier rapport
                   </h2>
                   <p className="text-sm text-white/60">
-                    Votre identité débloque le journal de mission et le hub
+                    Vous recevrez un fragment de récit et l'accès au hub
                     tactique.
                   </p>
                 </div>
@@ -643,10 +813,10 @@ function AccessGate({ onSubmit }) {
 
                 <Button
                   className="w-full rounded-xl"
-                  onClick={() => onSubmit({ firstName, lastName, email })}
+                  onClick={handleSubmit}
                   disabled={!canContinue}
                 >
-                  Accéder au Nautilus
+                  Recevoir le premier rapport
                 </Button>
 
                 <p className="text-xs text-white/50">
@@ -655,6 +825,70 @@ function AccessGate({ onSubmit }) {
                 </p>
               </CardContent>
             </Card>
+
+            <div className="space-y-4">
+              <Card className="rounded-3xl ocean-card text-white">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Top explorateurs</h3>
+                    <Badge
+                      variant="outline"
+                      className="rounded-full border-white/20 text-white/70"
+                    >
+                      Classement
+                    </Badge>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    {[
+                      { name: "Moussaillon L.", score: 1200 },
+                      { name: "Officier R.", score: 1116 },
+                      { name: "Commandant S.", score: 1006 },
+                      { name: "Cartographe M.", score: 922 },
+                    ].map((member, index) => (
+                      <div
+                        key={member.name}
+                        className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                      >
+                        <span>
+                          {index + 1}. {member.name}
+                        </span>
+                        <span className="text-white/70">{member.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-3xl ocean-card text-white">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Rôles disponibles</h3>
+                    <Badge
+                      variant="outline"
+                      className="rounded-full border-white/20 text-white/70"
+                    >
+                      6 postes
+                    </Badge>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {ROLES.map((role) => (
+                      <div
+                        key={role.id}
+                        className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm"
+                      >
+                        <div className="flex items-center gap-2">
+                          <role.icon className="h-4 w-4 text-cyan-200" />
+                          <span className="font-medium">{role.name}</span>
+                        </div>
+                        <p className="text-xs text-white/60 mt-1">
+                          {role.tagline}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </section>
       </div>
@@ -715,6 +949,8 @@ export default function CapitaineNemoGame() {
     cooldowns: {},
     directiveIndex: 0,
     incidentIndex: 0,
+    gameOver: null,
+    completedMissions: [],
     lastUnlock: null,
     turn: 1,
   }));
@@ -737,6 +973,11 @@ export default function CapitaineNemoGame() {
     (chapter) => !game.unlockedChapters.includes(chapter.id)
   );
   const directive = DIRECTIVES[game.directiveIndex];
+  const isGameOver = Boolean(game.gameOver);
+  const activeMission = getActiveMission(game.level);
+  const isMissionCompleted = activeMission
+    ? game.completedMissions.includes(activeMission.id)
+    : false;
 
   const resolveLevelUp = (currentLevel, currentXp, gainedXp) => {
     let newLevel = currentLevel;
@@ -758,13 +999,22 @@ export default function CapitaineNemoGame() {
 
   const handleAction = (action) => {
     setGame((current) => {
-      if (current.pendingChoice) return current;
+      if (current.pendingChoice || current.gameOver) return current;
+      if (current.cooldowns[action.id]) return current;
       const directive = DIRECTIVES[current.directiveIndex];
       const directiveHit = matchesDirective(action, directive);
       const bonusXp = directiveHit ? directive.bonusXp : 0;
-      const gainedXp = action.xp + bonusXp;
+
+      const activeMission = getActiveMission(current.level);
 
       const nextStats = applyEffects(current.stats, action.effects);
+      const missionCompleted =
+        activeMission &&
+        !current.completedMissions.includes(activeMission.id) &&
+        activeMission.check(nextStats);
+      const missionBonus = missionCompleted ? activeMission.rewardXp : 0;
+      const gainedXp = action.xp + bonusXp + missionBonus;
+
       const { newLevel, newXp, unlocks } = resolveLevelUp(
         current.level,
         current.xp,
@@ -797,7 +1047,7 @@ export default function CapitaineNemoGame() {
           sourceAction: action.label,
         };
       } else if (nextTurn % 2 === 0) {
-        const incident = INCIDENTS[incidentIndex % INCIDENTS.length];
+        const incident = pickIncident(nextStats, incidentIndex);
         pendingChoice = {
           kind: "incident",
           title: incident.title,
@@ -807,18 +1057,26 @@ export default function CapitaineNemoGame() {
         incidentIndex += 1;
       }
 
+      const nextUnlocked = Array.from(
+        new Set([...current.unlockedChapters, ...unlocks])
+      );
+      const gameOver = evaluateOutcome(nextStats, nextUnlocked);
+      const nextCompletedMissions = missionCompleted
+        ? [...current.completedMissions, activeMission.id]
+        : current.completedMissions;
+
       return {
         ...current,
         stats: nextStats,
         level: newLevel,
         xp: newXp,
-        unlockedChapters: Array.from(
-          new Set([...current.unlockedChapters, ...unlocks])
-        ),
-        pendingChoice,
+        unlockedChapters: nextUnlocked,
+        pendingChoice: gameOver ? null : pendingChoice,
         cooldowns: nextCooldowns,
         directiveIndex,
         incidentIndex,
+        gameOver,
+        completedMissions: nextCompletedMissions,
         lastUnlock,
         turn: nextTurn,
         log: [
@@ -838,6 +1096,16 @@ export default function CapitaineNemoGame() {
                 },
               ]
             : []),
+          ...(missionCompleted
+            ? [
+                {
+                  id: `${Date.now()}-${Math.random()}`,
+                  type: "mission",
+                  title: activeMission.label,
+                  text: `Mission accomplie : +${activeMission.rewardXp} XP.`,
+                },
+              ]
+            : []),
           ...current.log,
         ].slice(0, 8),
       };
@@ -846,12 +1114,34 @@ export default function CapitaineNemoGame() {
 
   const handleChoice = (option) => {
     setGame((current) => {
-      if (!current.pendingChoice) return current;
+      if (!current.pendingChoice || current.gameOver) return current;
       const nextStats = applyEffects(current.stats, option.effects);
+      const activeMission = getActiveMission(current.level);
+      const missionCompleted =
+        activeMission &&
+        !current.completedMissions.includes(activeMission.id) &&
+        activeMission.check(nextStats);
+      const missionBonus = missionCompleted ? activeMission.rewardXp : 0;
+      const { newLevel, newXp, unlocks } = resolveLevelUp(
+        current.level,
+        current.xp,
+        missionBonus
+      );
+      const nextUnlocked = Array.from(
+        new Set([...current.unlockedChapters, ...unlocks])
+      );
+      const gameOver = evaluateOutcome(nextStats, nextUnlocked);
       return {
         ...current,
         stats: nextStats,
         pendingChoice: null,
+        level: newLevel,
+        xp: newXp,
+        unlockedChapters: nextUnlocked,
+        gameOver,
+        completedMissions: missionCompleted
+          ? [...current.completedMissions, activeMission.id]
+          : current.completedMissions,
         log: [
           {
             id: `${Date.now()}-${Math.random()}`,
@@ -859,6 +1149,16 @@ export default function CapitaineNemoGame() {
             title: current.pendingChoice.title,
             text: option.crewLine,
           },
+          ...(missionCompleted
+            ? [
+                {
+                  id: `${Date.now()}-${Math.random()}`,
+                  type: "mission",
+                  title: activeMission.label,
+                  text: `Mission accomplie : +${activeMission.rewardXp} XP.`,
+                },
+              ]
+            : []),
           ...current.log,
         ].slice(0, 8),
       };
@@ -877,6 +1177,8 @@ export default function CapitaineNemoGame() {
       cooldowns: {},
       directiveIndex: 0,
       incidentIndex: 0,
+      gameOver: null,
+      completedMissions: [],
       lastUnlock: null,
       turn: 1,
     });
@@ -904,7 +1206,7 @@ export default function CapitaineNemoGame() {
             <span className="font-semibold">Nautilus — Hub de mission</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="hidden text-sm text-muted-foreground md:block">
+            <div className="hidden text-sm text-white/60 md:block">
               {user.firstName} {user.lastName}
             </div>
             <Badge variant="outline" className="rounded-full border-white/30 text-white">
@@ -923,7 +1225,7 @@ export default function CapitaineNemoGame() {
             <CardContent className="p-6 space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Rôle sélectionné</p>
+                  <p className="text-sm text-white/60">Rôle sélectionné</p>
                   <div className="flex items-center gap-2">
                     {role && <role.icon className="h-4 w-4" />}
                     <span className="text-lg font-semibold">{role?.name}</span>
@@ -931,9 +1233,9 @@ export default function CapitaineNemoGame() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div>
-                    <p className="text-xs text-muted-foreground">Niveau {game.level}</p>
+                    <p className="text-xs text-white/60">Niveau {game.level}</p>
                     <Progress value={levelProgress} className="h-2 w-40" />
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-white/60 mt-1">
                       {game.xp} / {xpNeeded(game.level)} XP
                     </p>
                   </div>
@@ -971,11 +1273,29 @@ export default function CapitaineNemoGame() {
                   <p className="font-medium">{directive.label}</p>
                   <p className="text-xs text-white/60">{directive.description}</p>
                 </div>
+                <div className="rounded-xl ocean-card-soft p-3 text-sm">
+                  <p className="text-xs text-white/60">Mission active</p>
+                  <p className="font-medium">{activeMission?.label ?? "Aucune mission"}</p>
+                  <p className="text-xs text-white/60">
+                    {activeMission?.description ?? "Nouvelle mission en préparation."}
+                  </p>
+                  {activeMission && (
+                    <p className="text-xs text-cyan-100/80">
+                      Récompense : +{activeMission.rewardXp} XP
+                    </p>
+                  )}
+                  {isMissionCompleted && (
+                    <Badge className="mt-2 rounded-full bg-cyan-200/20 text-cyan-50">
+                      Mission accomplie
+                    </Badge>
+                  )}
+                </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   {availableActions.map((action, index) => {
                     const cooldown = game.cooldowns[action.id] ?? 0;
                     const directiveHit = matchesDirective(action, directive);
-                    const isDisabled = cooldown > 0 || Boolean(game.pendingChoice);
+                    const isDisabled =
+                      cooldown > 0 || Boolean(game.pendingChoice) || isGameOver;
                     return (
                       <Card
                         key={action.id}
@@ -1094,6 +1414,7 @@ export default function CapitaineNemoGame() {
           <TabsList className="bg-white/10">
             <TabsTrigger value="journal">Journal</TabsTrigger>
             <TabsTrigger value="cadence">Cadence</TabsTrigger>
+            <TabsTrigger value="tutoriel">Tutoriel</TabsTrigger>
             <TabsTrigger value="histoire">Histoire complète</TabsTrigger>
           </TabsList>
           <TabsContent value="journal">
@@ -1129,6 +1450,44 @@ export default function CapitaineNemoGame() {
               </CardContent>
             </Card>
           </TabsContent>
+          <TabsContent value="tutoriel">
+            <Card className="rounded-2xl ocean-card">
+              <CardContent className="p-6 space-y-4 text-white/70 text-sm">
+                <div className="space-y-2">
+                  <h3 className="text-base font-semibold text-white">
+                    Comment jouer
+                  </h3>
+                  <p>
+                    Choisissez une action, puis répondez aux réactions de
+                    l'équipage ou aux incidents. Chaque décision modifie les
+                    statistiques et fait progresser l'histoire.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-white">Gagner</h4>
+                  <p>
+                    Débloquez tous les chapitres en atteignant les niveaux
+                    requis. Votre objectif est de révéler l'histoire complète
+                    du Nautilus.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-white">Perdre</h4>
+                  <p>
+                    La mission s'arrête si l'énergie ou le moral tombent à 0, si
+                    la coque cède, ou si la pression atteint 100.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-white">Conseil</h4>
+                  <p>
+                    Suivez les directives du quart pour gagner un bonus d'XP et
+                    adaptez vos choix quand un incident survient.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
           <TabsContent value="histoire">
             <Card className="rounded-2xl ocean-card">
               <CardContent className="p-6 space-y-4">
@@ -1138,9 +1497,11 @@ export default function CapitaineNemoGame() {
                     className="rounded-xl border border-white/10 bg-white/5 p-4"
                   >
                     <p className="font-medium">{chapter.title}</p>
-                    <p className="text-sm text-white/70 mt-2">
-                      {chapter.text}
-                    </p>
+                    {game.unlockedChapters.includes(chapter.id) && (
+                      <p className="text-sm text-white/70 mt-2">
+                        {chapter.text}
+                      </p>
+                    )}
                     {game.unlockedChapters.includes(chapter.id) ? (
                       <Badge className="mt-2 rounded-full bg-cyan-200/20 text-cyan-50">
                         Déverrouillé
@@ -1163,7 +1524,7 @@ export default function CapitaineNemoGame() {
           <Card className="w-full max-w-md rounded-2xl ocean-card">
             <CardContent className="p-6 space-y-4">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-white/60">
                   {game.pendingChoice.kind === "incident"
                     ? "Incident en cours"
                     : `Réaction de ${game.pendingChoice.title}`}
@@ -1172,7 +1533,7 @@ export default function CapitaineNemoGame() {
                   {game.pendingChoice.prompt}
                 </p>
                 {game.pendingChoice.sourceAction && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-white/60">
                     Suite à : {game.pendingChoice.sourceAction}
                   </p>
                 )}
@@ -1191,6 +1552,27 @@ export default function CapitaineNemoGame() {
                   </Button>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {game.gameOver && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center px-4">
+          <Card className="w-full max-w-md rounded-2xl ocean-card">
+            <CardContent className="p-6 space-y-4 text-white">
+              <p className="text-xs text-white/60">
+                {game.gameOver.status === "win" ? "Victoire" : "Fin de mission"}
+              </p>
+              <h3 className="text-xl font-semibold">
+                {game.gameOver.status === "win"
+                  ? "Mission accomplie"
+                  : "Mission interrompue"}
+              </h3>
+              <p className="text-sm text-white/70">{game.gameOver.reason}</p>
+              <Button className="w-full rounded-xl" onClick={resetGame}>
+                Recommencer
+              </Button>
             </CardContent>
           </Card>
         </div>
