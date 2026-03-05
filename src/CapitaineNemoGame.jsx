@@ -20,6 +20,7 @@ import {
   Crown,
   Trophy,
   BookOpen,
+  Send,
   ChevronRight,
 } from "lucide-react";
 
@@ -65,6 +66,33 @@ const ROLES = [
     tagline: "Signaux faibles et anomalies.",
     icon: Waves,
     perk: "+1 moral quand une alerte est anticipée.",
+  },
+];
+
+const INTERESTS = [
+  {
+    id: "science",
+    label: "Science",
+    description: "Fiches espèces, protocoles et découvertes.",
+    icon: Sparkles,
+  },
+  {
+    id: "aventure",
+    label: "Aventure",
+    description: "Action, choix critiques, cap dangereux.",
+    icon: Anchor,
+  },
+  {
+    id: "histoire",
+    label: "Histoire",
+    description: "Archives, contexte, récits de Jules Verne.",
+    icon: BookOpen,
+  },
+  {
+    id: "mystere",
+    label: "Mystère",
+    description: "Anomalies, secrets et signaux des abysses.",
+    icon: Shield,
   },
 ];
 
@@ -767,6 +795,9 @@ function AccessGate({ onSubmit }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [rolePreference, setRolePreference] = useState("capitaine");
+  const [interests, setInterests] = useState(["aventure"]);
+  const [curiosity, setCuriosity] = useState(4);
   const [cabinOpen, setCabinOpen] = useState(false);
   const [cabinCode, setCabinCode] = useState("");
   const [cabinError, setCabinError] = useState("");
@@ -779,12 +810,28 @@ function AccessGate({ onSubmit }) {
     email.includes(".");
 
   const canOpenCabin = cabinCode.length === 6;
+  const curiosityLabel =
+    curiosity <= 2 ? "Prudent" : curiosity === 3 ? "Curieux" : curiosity === 4 ? "Intrépide" : "Abyssal";
+  const preferredRole = ROLES.find((role) => role.id === rolePreference) ?? ROLES[0];
+
+  const toggleInterest = (key) => {
+    setInterests((prev) => {
+      if (prev.includes(key)) {
+        const next = prev.filter((value) => value !== key);
+        return next.length ? next : prev;
+      }
+      return [...prev, key];
+    });
+  };
 
   const handleSubmit = () => {
     const payload = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
+      roleId: rolePreference,
+      interests,
+      curiosity,
       createdAt: new Date().toISOString(),
       source: "nautilus-web",
     };
@@ -823,6 +870,20 @@ function AccessGate({ onSubmit }) {
               <Anchor className="h-5 w-5" />
               <span className="font-semibold">Nautilus — Protocole Nemo</span>
             </div>
+            <nav className="hidden items-center gap-4 text-xs text-white/60 md:flex">
+              <a className="hover:text-white" href="#concept">
+                Concept
+              </a>
+              <a className="hover:text-white" href="#roles">
+                Rôles
+              </a>
+              <a className="hover:text-white" href="#game">
+                Jeu
+              </a>
+              <a className="hover:text-white" href="#embarquer">
+                Embarquer
+              </a>
+            </nav>
             <div className="flex items-center gap-2">
               <Badge
                 variant="secondary"
@@ -846,55 +907,73 @@ function AccessGate({ onSubmit }) {
           </div>
         </div>
 
-        <section className="mx-auto max-w-6xl px-4 py-10 space-y-8">
-          <div className="grid gap-8 lg:grid-cols-[1.1fr,0.9fr] items-start">
+        <main className="mx-auto max-w-6xl px-4 py-10 space-y-12">
+          <section
+            id="hero"
+            className="grid gap-8 lg:grid-cols-2 lg:items-center"
+          >
             <div className="space-y-6">
               <Badge className="rounded-full bg-cyan-200/20 text-cyan-50">
                 Expédition 20 000 lieues
               </Badge>
               <h1 className="text-4xl font-semibold leading-tight">
-                Embarquez à bord du Nautilus
+                Vivez Vingt Mille Lieues comme si vous y étiez.
               </h1>
               <p className="text-lg text-white/70">
-                Recevez des rapports secrets, prenez des décisions critiques,
-                et révélez l'histoire chapitre après chapitre. Une expérience
-                narrative moderne, pensée mobile-first.
+                Recevez des rapports secrets, prenez des décisions critiques et
+                dévoilez l'histoire chapitre après chapitre. Un format mobile,
+                immersif et quotidien.
               </p>
 
               <div className="flex flex-wrap gap-3">
-                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm">
+                <a
+                  href="#embarquer"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-950"
+                >
+                  Rejoindre l'expédition <ChevronRight className="h-4 w-4" />
+                </a>
+                <a
+                  href="#roles"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-white"
+                >
+                  Trouver mon rôle
+                </a>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <Card className="rounded-2xl ocean-card-soft text-white">
+                  <CardContent className="p-3">
+                    <p className="text-xs text-white/60">Membres</p>
+                    <p className="text-lg font-semibold">4 207</p>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-2xl ocean-card-soft text-white">
+                  <CardContent className="p-3">
+                    <p className="text-xs text-white/60">Rapport #1</p>
+                    <p className="text-lg font-semibold">Instantané</p>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-2xl ocean-card-soft text-white">
+                  <CardContent className="p-3">
+                    <p className="text-xs text-white/60">Mode</p>
+                    <p className="text-lg font-semibold">Solo</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="flex flex-wrap gap-3 text-sm">
+                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
                   <Compass className="h-4 w-4 text-cyan-200" />
                   6 rôles complémentaires
                 </div>
-                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm">
+                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
                   <Waves className="h-4 w-4 text-cyan-200" />
                   Rapports immersifs
                 </div>
-                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm">
+                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
                   <Sparkles className="h-4 w-4 text-cyan-200" />
                   Progression narrative
                 </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Card className="rounded-2xl ocean-card-soft text-white card-animate">
-                  <CardContent className="p-4">
-                    <p className="text-xs text-white/60">Chapitres</p>
-                    <p className="text-2xl font-semibold">5</p>
-                  </CardContent>
-                </Card>
-                <Card className="rounded-2xl ocean-card-soft text-white card-animate">
-                  <CardContent className="p-4">
-                    <p className="text-xs text-white/60">Décisions</p>
-                    <p className="text-2xl font-semibold">+20</p>
-                  </CardContent>
-                </Card>
-                <Card className="rounded-2xl ocean-card-soft text-white card-animate">
-                  <CardContent className="p-4">
-                    <p className="text-xs text-white/60">Mode</p>
-                    <p className="text-2xl font-semibold">Solo</p>
-                  </CardContent>
-                </Card>
               </div>
             </div>
 
@@ -905,19 +984,20 @@ function AccessGate({ onSubmit }) {
                   <span>Jour 1</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="font-semibold">Bienvenue à bord, Navigateur.</p>
+                  <p className="font-semibold">
+                    Bienvenue à bord, {preferredRole.name}.
+                  </p>
                   <Badge
                     variant="outline"
                     className="rounded-full border-white/20 text-white/80"
                   >
-                    Curiosité : Intrépide
+                    Curiosité : {curiosityLabel}
                   </Badge>
                 </div>
                 <p className="text-sm text-white/70 leading-relaxed font-mono">
-                  À 1320 mètres, nos capteurs ont détecté un signal lumineux
-                  dans l'obscurité. Navigateur, calculez une route d'évitement :
-                  les courants se renforcent à l'est. Mission : identifiez
-                  l'origine du signal et choisissez votre action.
+                  À 1320 mètres, nos capteurs ont détecté un signal lumineux.
+                  {preferredRole.name}, calculez une route d'évitement et
+                  préparez l'équipe. Mission : identifier l'origine du signal.
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm">
@@ -928,29 +1008,173 @@ function AccessGate({ onSubmit }) {
                   <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm">
                     <p className="text-xs text-white/60">Progression</p>
                     <p className="font-semibold">Moussaillon → Officier</p>
-                    <p className="text-xs text-white/50">
-                      3 missions restantes
-                    </p>
+                    <p className="text-xs text-white/50">3 missions restantes</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
+          </section>
 
-          <div className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
-            <Card
-              id="embarquer"
-              className="rounded-3xl ocean-card text-white shadow-xl shadow-black/30 backdrop-blur"
-            >
+          <section id="concept" className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-3">
+              {[
+                {
+                  title: "Le twist",
+                  text:
+                    "Vous ne recevez pas un PDF. Vous vivez l'histoire en temps réel.",
+                  icon: BookOpen,
+                },
+                {
+                  title: "Rapports quotidiens",
+                  text:
+                    "Narratif + mission courte. Une routine immersive et claire.",
+                  icon: Send,
+                },
+                {
+                  title: "IA & personnalisation",
+                  text:
+                    "Rapports, créatures et voix Nemo générés pour votre rôle.",
+                  icon: Sparkles,
+                },
+              ].map((item) => (
+                <Card key={item.title} className="rounded-3xl ocean-card text-white">
+                  <CardContent className="p-5 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <item.icon className="h-4 w-4 text-cyan-200" />
+                      <h3 className="font-semibold">{item.title}</h3>
+                    </div>
+                    <p className="text-sm text-white/70">{item.text}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                "Embarquer + rôle + intérêts",
+                "Rapport #1 immédiat",
+                "Progression & chapitres débloqués",
+              ].map((step, index) => (
+                <Card key={step} className="rounded-2xl ocean-card-soft text-white">
+                  <CardContent className="p-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-slate-950 text-xs font-semibold">
+                        {index + 1}
+                      </span>
+                      <span className="font-medium">{step}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+
+          <section id="roles" className="space-y-4">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold">Rôles de l'équipage</h2>
+                <p className="text-sm text-white/60">
+                  Le même événement, des perspectives différentes.
+                </p>
+              </div>
+              <Badge
+                variant="outline"
+                className="rounded-full border-white/20 text-white/70"
+              >
+                6 postes
+              </Badge>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {ROLES.map((role, index) => (
+                <RoleCard
+                  key={role.id}
+                  role={role}
+                  active={rolePreference === role.id}
+                  delay={index * 80}
+                  onSelect={() => setRolePreference(role.id)}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section id="game" className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
+            <Card className="rounded-3xl ocean-card text-white">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">Gamification (aperçu)</h3>
+                  <Badge
+                    variant="outline"
+                    className="rounded-full border-white/20 text-white/70"
+                  >
+                    Débloquez l'histoire
+                  </Badge>
+                </div>
+                <p className="text-sm text-white/70">
+                  Chaque mission complétée vous fait progresser et révèle des
+                  fragments narratifs.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    "Badges de progression",
+                    "Grades et rangs",
+                    "Classement saisonnier",
+                    "Récompenses narratives",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm"
+                    >
+                      {item}
+                    </div>
+                  ))}
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
+                  Mission du jour : identifier l'origine du signal et choisir
+                  entre faune / faille / artefact.
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl ocean-card text-white">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-cyan-200" />
+                    <h3 className="font-semibold">Top explorateurs</h3>
+                  </div>
+                  <span className="text-xs text-white/50">maquette</span>
+                </div>
+                <div className="space-y-2 text-sm">
+                  {[
+                    { name: "Commandant S.", score: 1242 },
+                    { name: "Naturaliste A.", score: 1178 },
+                    { name: "Navigateur J.", score: 1104 },
+                    { name: "Cartographe M.", score: 1036 },
+                  ].map((member, index) => (
+                    <div
+                      key={member.name}
+                      className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                    >
+                      <span>
+                        {index + 1}. {member.name}
+                      </span>
+                      <span className="text-white/70">{member.score}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          <section id="embarquer" className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
+            <Card className="rounded-3xl ocean-card text-white">
               <CardContent className="p-6 space-y-4">
                 <div className="space-y-1">
                   <p className="text-sm text-cyan-100/80">Embarquer maintenant</p>
                   <h2 className="text-2xl font-semibold">
-                    Identifiez-vous pour recevoir le premier rapport
+                    Recevoir le premier rapport
                   </h2>
                   <p className="text-sm text-white/60">
-                    Vous recevrez un fragment de récit et l'accès au hub
-                    tactique.
+                    Votre profil personnalise les rapports et les missions.
                   </p>
                 </div>
 
@@ -988,6 +1212,54 @@ function AccessGate({ onSubmit }) {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label>Centres d'intérêt</Label>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {INTERESTS.map((item) => {
+                      const active = interests.includes(item.id);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => toggleInterest(item.id)}
+                          className={`rounded-2xl border p-3 text-left text-sm transition ${
+                            active
+                              ? "border-cyan-200/60 bg-cyan-200/10"
+                              : "border-white/10 bg-white/5"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <item.icon className="h-4 w-4 text-cyan-200" />
+                            <div>
+                              <div className="font-medium">{item.label}</div>
+                              <div className="text-xs text-white/60">
+                                {item.description}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-white/60">
+                    <span>Niveau de curiosité</span>
+                    <span>
+                      {curiosityLabel} • {curiosity}/5
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={5}
+                    value={curiosity}
+                    onChange={(event) => setCuriosity(Number(event.target.value))}
+                    className="w-full"
+                  />
+                </div>
+
                 <Button
                   className="w-full rounded-xl"
                   onClick={handleSubmit}
@@ -1003,77 +1275,43 @@ function AccessGate({ onSubmit }) {
               </CardContent>
             </Card>
 
-            <div className="space-y-4">
-              <Card className="rounded-3xl ocean-card text-white">
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Trophy className="h-4 w-4 text-cyan-200" />
-                      <h3 className="font-semibold">Top explorateurs</h3>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className="rounded-full border-white/20 text-white/70"
-                    >
-                      Classement
-                    </Badge>
+            <Card className="rounded-3xl ocean-card text-white">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">Votre profil (aperçu)</h3>
+                  <Badge
+                    variant="outline"
+                    className="rounded-full border-white/20 text-white/70"
+                  >
+                    {preferredRole.name}
+                  </Badge>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm">
+                    <p className="text-xs text-white/60">Rôle</p>
+                    <p className="font-semibold">{preferredRole.name}</p>
+                    <p className="text-xs text-white/50">{preferredRole.perk}</p>
                   </div>
-                  <div className="space-y-2 text-sm">
-                    {[
-                      { name: "Moussaillon L.", score: 1200 },
-                      { name: "Officier R.", score: 1116 },
-                      { name: "Commandant S.", score: 1006 },
-                      { name: "Cartographe M.", score: 922 },
-                    ].map((member, index) => (
-                      <div
-                        key={member.name}
-                        className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2"
-                      >
-                        <span>
-                          {index + 1}. {member.name}
-                        </span>
-                        <span className="text-white/70">{member.score}</span>
-                      </div>
-                    ))}
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm">
+                    <p className="text-xs text-white/60">Curiosité</p>
+                    <p className="font-semibold">{curiosityLabel}</p>
+                    <p className="text-xs text-white/50">
+                      Impacte les missions
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-3xl ocean-card text-white">
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Crown className="h-4 w-4 text-cyan-200" />
-                      <h3 className="font-semibold">Rôles disponibles</h3>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className="rounded-full border-white/20 text-white/70"
-                    >
-                      6 postes
-                    </Badge>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {ROLES.map((role) => (
-                      <div
-                        key={role.id}
-                        className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm"
-                      >
-                        <div className="flex items-center gap-2">
-                          <role.icon className="h-4 w-4 text-cyan-200" />
-                          <span className="font-medium">{role.name}</span>
-                        </div>
-                        <p className="text-xs text-white/60 mt-1">
-                          {role.tagline}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm">
+                  <p className="text-xs text-white/60">Aperçu rapport #1</p>
+                  <p className="text-sm text-white/70 mt-2">
+                    Une anomalie lumineuse se manifeste à 1320 mètres. Votre
+                    rôle conditionne les données transmises et les choix à
+                    faire.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        </main>
       </div>
 
       {cabinOpen && (
