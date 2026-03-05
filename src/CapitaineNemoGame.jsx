@@ -330,6 +330,108 @@ const ROLE_ACTIONS = [
   },
 ];
 
+const DIRECTIVES = [
+  {
+    id: "pressure",
+    label: "Stabiliser la pression",
+    description: "Favoriser les actions qui réduisent la pression.",
+    stat: "pressure",
+    direction: -1,
+    bonusXp: 6,
+  },
+  {
+    id: "morale",
+    label: "Remonter le moral",
+    description: "Favoriser les actions qui augmentent le moral.",
+    stat: "morale",
+    direction: 1,
+    bonusXp: 6,
+  },
+  {
+    id: "hull",
+    label: "Consolider la coque",
+    description: "Prioriser les actions qui renforcent la coque.",
+    stat: "hull",
+    direction: 1,
+    bonusXp: 6,
+  },
+];
+
+const INCIDENTS = [
+  {
+    id: "condensation",
+    title: "Incident — Condensation critique",
+    prompt:
+      "Une fuite de condensation menace l'atelier. L'eau s'infiltre trop vite.",
+    options: [
+      {
+        label: "Sceller immédiatement",
+        effects: { hull: +4, energy: -3, morale: -1 },
+        crewLine: "Les joints ont tenu. Quelques pièces seront à remplacer.",
+      },
+      {
+        label: "Isoler le compartiment",
+        effects: { pressure: -2, supplies: -3 },
+        crewLine: "Zone isolée. La pression se stabilise mais on perd du stock.",
+      },
+    ],
+  },
+  {
+    id: "chant",
+    title: "Incident — Chant abyssal",
+    prompt:
+      "Un chant grave traverse la coque. Certains membres paniquent.",
+    options: [
+      {
+        label: "Écouter et analyser",
+        effects: { morale: +3, pressure: +2 },
+        crewLine: "Le son est enregistré. L'équipage reprend confiance.",
+      },
+      {
+        label: "Ignorer et avancer",
+        effects: { pressure: -2, morale: -1 },
+        crewLine: "On reste concentrés, mais un malaise persiste.",
+      },
+    ],
+  },
+  {
+    id: "lumiere",
+    title: "Incident — Banc lumineux",
+    prompt:
+      "Un banc bioluminescent entoure le Nautilus. L'effet est hypnotique.",
+    options: [
+      {
+        label: "Suivre la lueur",
+        effects: { morale: +2, pressure: +3 },
+        crewLine: "La trajectoire est magnifique, mais la tension monte.",
+      },
+      {
+        label: "Rompre le contact",
+        effects: { pressure: -3, energy: -2 },
+        crewLine: "La pression chute, mais l'équipage regrette la découverte.",
+      },
+    ],
+  },
+  {
+    id: "bruit",
+    title: "Incident — Bruit dans les turbines",
+    prompt:
+      "Un cliquetis irrégulier résonne. L'Ingénieur demande une décision rapide.",
+    options: [
+      {
+        label: "Arrêt contrôlé",
+        effects: { hull: +5, energy: -4 },
+        crewLine: "Inspection terminée. Le bruit venait d'un palier usé.",
+      },
+      {
+        label: "Maintenir la vitesse",
+        effects: { energy: +2, hull: -3, pressure: +2 },
+        crewLine: "On gagne du temps, mais la mécanique souffre.",
+      },
+    ],
+  },
+];
+
 const INITIAL_STATS = {
   energy: 70,
   hull: 80,
@@ -349,17 +451,34 @@ const applyEffects = (stats, effects) => {
 };
 
 const xpNeeded = (level) => 90 + (level - 1) * 45;
+const COOLDOWN_TURNS = 2;
 
 const getInitialUnlocked = () =>
   STORY.filter((chapter) => chapter.unlockLevel <= 1).map((chapter) => chapter.id);
 
-function RoleCard({ role, active, onSelect }) {
+const tickCooldowns = (cooldowns) => {
+  const next = {};
+  Object.entries(cooldowns).forEach(([id, turns]) => {
+    if (turns > 1) {
+      next[id] = turns - 1;
+    }
+  });
+  return next;
+};
+
+const matchesDirective = (action, directive) => {
+  const delta = action.effects?.[directive.stat];
+  return typeof delta === "number" && delta * directive.direction > 0;
+};
+
+function RoleCard({ role, active, onSelect, delay = 0 }) {
   const Icon = role.icon;
   return (
     <Card
       className={`rounded-xl border ${
         active ? "border-cyan-200/60" : "border-white/10"
-      } bg-white/5 text-white`}
+      } bg-white/5 text-white card-animate`}
+      style={{ animationDelay: `${delay}ms` }}
     >
       <CardContent className="p-4 space-y-2">
         <div className="flex items-center gap-2">
@@ -454,19 +573,19 @@ function AccessGate({ onSubmit }) {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <Card className="rounded-2xl border-white/10 bg-white/5 text-white">
+                <Card className="rounded-2xl border-white/10 bg-white/5 text-white card-animate">
                   <CardContent className="p-4">
                     <p className="text-xs text-white/60">Chapitres</p>
                     <p className="text-2xl font-semibold">5</p>
                   </CardContent>
                 </Card>
-                <Card className="rounded-2xl border-white/10 bg-white/5 text-white">
+                <Card className="rounded-2xl border-white/10 bg-white/5 text-white card-animate">
                   <CardContent className="p-4">
                     <p className="text-xs text-white/60">Décisions</p>
                     <p className="text-2xl font-semibold">+20</p>
                   </CardContent>
                 </Card>
-                <Card className="rounded-2xl border-white/10 bg-white/5 text-white">
+                <Card className="rounded-2xl border-white/10 bg-white/5 text-white card-animate">
                   <CardContent className="p-4">
                     <p className="text-xs text-white/60">Mode</p>
                     <p className="text-2xl font-semibold">Solo</p>
@@ -570,10 +689,11 @@ function RoleSelection({ user, onSelect }) {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {ROLES.map((role) => (
+          {ROLES.map((role, index) => (
             <RoleCard
               key={role.id}
               role={role}
+              delay={index * 80}
               onSelect={() => onSelect(role)}
             />
           ))}
@@ -591,7 +711,10 @@ export default function CapitaineNemoGame() {
     stats: INITIAL_STATS,
     unlockedChapters: getInitialUnlocked(),
     log: [],
-    pendingReaction: null,
+    pendingChoice: null,
+    cooldowns: {},
+    directiveIndex: 0,
+    incidentIndex: 0,
     lastUnlock: null,
     turn: 1,
   }));
@@ -613,6 +736,7 @@ export default function CapitaineNemoGame() {
   const nextLocked = STORY.find(
     (chapter) => !game.unlockedChapters.includes(chapter.id)
   );
+  const directive = DIRECTIVES[game.directiveIndex];
 
   const resolveLevelUp = (currentLevel, currentXp, gainedXp) => {
     let newLevel = currentLevel;
@@ -634,17 +758,54 @@ export default function CapitaineNemoGame() {
 
   const handleAction = (action) => {
     setGame((current) => {
+      if (current.pendingChoice) return current;
+      const directive = DIRECTIVES[current.directiveIndex];
+      const directiveHit = matchesDirective(action, directive);
+      const bonusXp = directiveHit ? directive.bonusXp : 0;
+      const gainedXp = action.xp + bonusXp;
+
       const nextStats = applyEffects(current.stats, action.effects);
       const { newLevel, newXp, unlocks } = resolveLevelUp(
         current.level,
         current.xp,
-        action.xp
+        gainedXp
       );
 
       const lastUnlock = unlocks.length
         ? STORY.find((chapter) => chapter.id === unlocks[unlocks.length - 1])
             ?.title
         : null;
+
+      const nextTurn = current.turn + 1;
+      const nextCooldowns = tickCooldowns(current.cooldowns);
+      nextCooldowns[action.id] = COOLDOWN_TURNS;
+
+      let directiveIndex = current.directiveIndex;
+      if (nextTurn % 3 === 0) {
+        directiveIndex = (directiveIndex + 1) % DIRECTIVES.length;
+      }
+
+      let pendingChoice = null;
+      let incidentIndex = current.incidentIndex;
+
+      if (action.reaction) {
+        pendingChoice = {
+          kind: "reaction",
+          title: action.reaction.speaker,
+          prompt: action.reaction.prompt,
+          options: action.reaction.options,
+          sourceAction: action.label,
+        };
+      } else if (nextTurn % 2 === 0) {
+        const incident = INCIDENTS[incidentIndex % INCIDENTS.length];
+        pendingChoice = {
+          kind: "incident",
+          title: incident.title,
+          prompt: incident.prompt,
+          options: incident.options,
+        };
+        incidentIndex += 1;
+      }
 
       return {
         ...current,
@@ -654,11 +815,12 @@ export default function CapitaineNemoGame() {
         unlockedChapters: Array.from(
           new Set([...current.unlockedChapters, ...unlocks])
         ),
-        pendingReaction: action.reaction
-          ? { ...action.reaction, sourceAction: action.label }
-          : null,
+        pendingChoice,
+        cooldowns: nextCooldowns,
+        directiveIndex,
+        incidentIndex,
         lastUnlock,
-        turn: current.turn + 1,
+        turn: nextTurn,
         log: [
           {
             id: `${Date.now()}-${Math.random()}`,
@@ -666,25 +828,35 @@ export default function CapitaineNemoGame() {
             title: action.label,
             text: action.description,
           },
+          ...(directiveHit
+            ? [
+                {
+                  id: `${Date.now()}-${Math.random()}`,
+                  type: "directive",
+                  title: directive.label,
+                  text: `Bonus de +${directive.bonusXp} XP appliqué.`,
+                },
+              ]
+            : []),
           ...current.log,
         ].slice(0, 8),
       };
     });
   };
 
-  const handleReaction = (option) => {
+  const handleChoice = (option) => {
     setGame((current) => {
-      if (!current.pendingReaction) return current;
+      if (!current.pendingChoice) return current;
       const nextStats = applyEffects(current.stats, option.effects);
       return {
         ...current,
         stats: nextStats,
-        pendingReaction: null,
+        pendingChoice: null,
         log: [
           {
             id: `${Date.now()}-${Math.random()}`,
-            type: "reaction",
-            title: current.pendingReaction.speaker,
+            type: current.pendingChoice.kind,
+            title: current.pendingChoice.title,
             text: option.crewLine,
           },
           ...current.log,
@@ -701,7 +873,10 @@ export default function CapitaineNemoGame() {
       stats: INITIAL_STATS,
       unlockedChapters: getInitialUnlocked(),
       log: [],
-      pendingReaction: null,
+      pendingChoice: null,
+      cooldowns: {},
+      directiveIndex: 0,
+      incidentIndex: 0,
       lastUnlock: null,
       turn: 1,
     });
@@ -721,8 +896,8 @@ export default function CapitaineNemoGame() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="border-b">
+    <div className="min-h-screen ocean-skin ocean-bg text-foreground">
+      <div className="border-b border-white/10">
         <div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-2">
             <Anchor className="h-5 w-5" />
@@ -732,7 +907,7 @@ export default function CapitaineNemoGame() {
             <div className="hidden text-sm text-muted-foreground md:block">
               {user.firstName} {user.lastName}
             </div>
-            <Badge variant="outline" className="rounded-full">
+            <Badge variant="outline" className="rounded-full border-white/30 text-white">
               Tour {game.turn}
             </Badge>
             <Button variant="outline" className="rounded-xl" onClick={resetGame}>
@@ -744,7 +919,7 @@ export default function CapitaineNemoGame() {
 
       <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
         <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
-          <Card className="rounded-2xl">
+          <Card className="rounded-2xl ocean-card">
             <CardContent className="p-6 space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="space-y-1">
@@ -766,7 +941,7 @@ export default function CapitaineNemoGame() {
               </div>
 
               {game.lastUnlock && (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+                <div className="rounded-xl border border-emerald-200/40 bg-emerald-200/10 p-3 text-sm text-emerald-100">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4" />
                     <span>Nouveau chapitre débloqué : {game.lastUnlock}</span>
@@ -787,44 +962,82 @@ export default function CapitaineNemoGame() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Actions disponibles</h3>
-                  <Badge variant="secondary" className="rounded-full">
+                  <Badge variant="secondary" className="rounded-full bg-white/10 text-white">
                     {availableActions.length} actions
                   </Badge>
                 </div>
+                <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm">
+                  <p className="text-xs text-white/60">Directive du quart</p>
+                  <p className="font-medium">{directive.label}</p>
+                  <p className="text-xs text-white/60">{directive.description}</p>
+                </div>
                 <div className="grid gap-3 md:grid-cols-2">
-                  {availableActions.map((action) => (
-                    <Card key={action.id} className="rounded-xl">
-                      <CardContent className="p-4 space-y-2">
-                        <p className="font-medium">{action.label}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {action.description}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="rounded-full">
-                            +{action.xp} XP
-                          </Badge>
-                          <Button
-                            size="sm"
-                            className="rounded-xl"
-                            onClick={() => handleAction(action)}
-                          >
-                            Exécuter <ChevronRight className="ml-2 h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {availableActions.map((action, index) => {
+                    const cooldown = game.cooldowns[action.id] ?? 0;
+                    const directiveHit = matchesDirective(action, directive);
+                    const isDisabled = cooldown > 0 || Boolean(game.pendingChoice);
+                    return (
+                      <Card
+                        key={action.id}
+                        className="rounded-xl ocean-card-soft card-animate"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <CardContent className="p-4 space-y-2">
+                          <p className="font-medium">{action.label}</p>
+                          <p className="text-sm text-white/70">
+                            {action.description}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className="rounded-full border-white/30 text-white"
+                            >
+                              +{action.xp} XP
+                            </Badge>
+                            {directiveHit && (
+                              <Badge className="rounded-full bg-cyan-200/20 text-cyan-50">
+                                Directive +{directive.bonusXp} XP
+                              </Badge>
+                            )}
+                            {cooldown > 0 && (
+                              <Badge
+                                variant="outline"
+                                className="rounded-full border-white/20 text-white/70"
+                              >
+                                Cooldown {cooldown} tour{cooldown > 1 ? "s" : ""}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-white/50">
+                              {cooldown > 0
+                                ? "Repos tactique requis."
+                                : "Disponible maintenant."}
+                            </span>
+                            <Button
+                              size="sm"
+                              className="rounded-xl"
+                              onClick={() => handleAction(action)}
+                              disabled={isDisabled}
+                            >
+                              Exécuter <ChevronRight className="ml-2 h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <div className="space-y-4">
-            <Card className="rounded-2xl">
+            <Card className="rounded-2xl ocean-card">
               <CardContent className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold">Équipage</h3>
-                  <Badge variant="secondary" className="rounded-full">
+                  <Badge variant="secondary" className="rounded-full bg-white/10 text-white">
                     6 postes
                   </Badge>
                 </div>
@@ -836,9 +1049,9 @@ export default function CapitaineNemoGame() {
                         <span className="text-sm">{r.name}</span>
                       </div>
                       {r.id === role?.id ? (
-                        <Badge className="rounded-full">Vous</Badge>
+                        <Badge className="rounded-full bg-cyan-200/20 text-cyan-50">Vous</Badge>
                       ) : (
-                        <Badge variant="outline" className="rounded-full">
+                        <Badge variant="outline" className="rounded-full border-white/30 text-white">
                           IA
                         </Badge>
                       )}
@@ -848,20 +1061,23 @@ export default function CapitaineNemoGame() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl">
+            <Card className="rounded-2xl ocean-card">
               <CardContent className="p-5 space-y-3">
                 <h3 className="font-semibold">Storyline</h3>
                 <div className="space-y-2">
                   {unlockedStory.map((chapter) => (
-                    <div key={chapter.id} className="rounded-xl border p-3">
+                    <div
+                      key={chapter.id}
+                      className="rounded-xl border border-white/10 bg-white/5 p-3"
+                    >
                       <p className="text-sm font-medium">{chapter.title}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-white/60 mt-1">
                         {chapter.text}
                       </p>
                     </div>
                   ))}
                   {nextLocked && (
-                    <div className="rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
+                    <div className="rounded-xl border border-dashed border-white/20 p-3 text-xs text-white/50">
                       Prochain chapitre au niveau {nextLocked.unlockLevel}.
                     </div>
                   )}
@@ -872,23 +1088,23 @@ export default function CapitaineNemoGame() {
         </div>
 
         <Tabs defaultValue="journal" className="w-full">
-          <TabsList>
+          <TabsList className="bg-white/10">
             <TabsTrigger value="journal">Journal</TabsTrigger>
             <TabsTrigger value="cadence">Cadence</TabsTrigger>
             <TabsTrigger value="histoire">Histoire complète</TabsTrigger>
           </TabsList>
           <TabsContent value="journal">
-            <Card className="rounded-2xl">
+            <Card className="rounded-2xl ocean-card">
               <CardContent className="p-6 space-y-4">
                 {game.log.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-white/60">
                     Aucun événement pour l'instant.
                   </p>
                 ) : (
                   game.log.map((item) => (
                     <div key={item.id} className="space-y-1">
                       <p className="text-sm font-medium">{item.title}</p>
-                      <p className="text-sm text-muted-foreground">{item.text}</p>
+                      <p className="text-sm text-white/70">{item.text}</p>
                       <Separator />
                     </div>
                   ))
@@ -897,8 +1113,8 @@ export default function CapitaineNemoGame() {
             </Card>
           </TabsContent>
           <TabsContent value="cadence">
-            <Card className="rounded-2xl">
-              <CardContent className="p-6 space-y-2 text-sm text-muted-foreground">
+            <Card className="rounded-2xl ocean-card">
+              <CardContent className="p-6 space-y-2 text-sm text-white/70">
                 <p>
                   Chaque action déclenche une réaction d'un autre poste. Vous
                   choisissez la réponse pour maintenir l'équilibre du Nautilus.
@@ -911,18 +1127,23 @@ export default function CapitaineNemoGame() {
             </Card>
           </TabsContent>
           <TabsContent value="histoire">
-            <Card className="rounded-2xl">
+            <Card className="rounded-2xl ocean-card">
               <CardContent className="p-6 space-y-4">
                 {STORY.map((chapter) => (
-                  <div key={chapter.id} className="rounded-xl border p-4">
+                  <div
+                    key={chapter.id}
+                    className="rounded-xl border border-white/10 bg-white/5 p-4"
+                  >
                     <p className="font-medium">{chapter.title}</p>
-                    <p className="text-sm text-muted-foreground mt-2">
+                    <p className="text-sm text-white/70 mt-2">
                       {chapter.text}
                     </p>
                     {game.unlockedChapters.includes(chapter.id) ? (
-                      <Badge className="mt-2 rounded-full">Déverrouillé</Badge>
+                      <Badge className="mt-2 rounded-full bg-cyan-200/20 text-cyan-50">
+                        Déverrouillé
+                      </Badge>
                     ) : (
-                      <Badge variant="outline" className="mt-2 rounded-full">
+                      <Badge variant="outline" className="mt-2 rounded-full border-white/30 text-white">
                         Niveau {chapter.unlockLevel}
                       </Badge>
                     )}
@@ -934,31 +1155,33 @@ export default function CapitaineNemoGame() {
         </Tabs>
       </div>
 
-      {game.pendingReaction && (
+      {game.pendingChoice && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4">
-          <Card className="w-full max-w-md rounded-2xl">
+          <Card className="w-full max-w-md rounded-2xl ocean-card">
             <CardContent className="p-6 space-y-4">
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">
-                  Réaction de {game.pendingReaction.speaker}
+                  {game.pendingChoice.kind === "incident"
+                    ? "Incident en cours"
+                    : `Réaction de ${game.pendingChoice.title}`}
                 </p>
                 <p className="text-lg font-semibold">
-                  {game.pendingReaction.prompt}
+                  {game.pendingChoice.prompt}
                 </p>
-                {game.pendingReaction.sourceAction && (
+                {game.pendingChoice.sourceAction && (
                   <p className="text-xs text-muted-foreground">
-                    Suite à : {game.pendingReaction.sourceAction}
+                    Suite à : {game.pendingChoice.sourceAction}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                {game.pendingReaction.options.map((option) => (
+                {game.pendingChoice.options.map((option) => (
                   <Button
                     key={option.label}
                     variant="outline"
                     className="w-full rounded-xl justify-between"
-                    onClick={() => handleReaction(option)}
+                    onClick={() => handleChoice(option)}
                   >
                     {option.label}
                     <ChevronRight className="h-4 w-4" />

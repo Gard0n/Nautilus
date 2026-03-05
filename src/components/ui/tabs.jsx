@@ -45,7 +45,7 @@ function TabsTrigger({ value, className, ...props }) {
     <button
       className={cn(
         "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-        active ? "bg-white text-foreground" : "text-muted-foreground",
+        active ? "bg-white/10 text-white" : "text-white/60",
         className
       )}
       onClick={() => ctx.setValue(value)}
