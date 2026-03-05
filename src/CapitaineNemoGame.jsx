@@ -16,6 +16,10 @@ import {
   Leaf,
   Shield,
   Sparkles,
+  KeyRound,
+  Crown,
+  Trophy,
+  BookOpen,
   ChevronRight,
 } from "lucide-react";
 
@@ -332,6 +336,7 @@ const ROLE_ACTIONS = [
 
 const MAKE_WEBHOOK_URL =
   "https://hook.eu1.make.com/eek98jenyfdixidcetyb9ff3d4rrqcrp";
+const CAPTAIN_CABIN_CODE = "186970";
 
 const DIRECTIVES = [
   {
@@ -624,16 +629,156 @@ function StatLine({ label, value }) {
   );
 }
 
+function CaptainCabin({ onClose }) {
+  return (
+    <div className="min-h-screen ocean-skin ocean-bg text-foreground relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 left-16 h-64 w-64 rounded-full bg-cyan-400/15 blur-[120px]" />
+        <div className="absolute bottom-10 right-10 h-40 w-40 rounded-full bg-indigo-400/10 blur-[120px]" />
+      </div>
+
+      <div className="relative">
+        <div className="border-b border-white/10">
+          <div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-4">
+            <div className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-cyan-200" />
+              <span className="font-semibold">Cabine du capitaine Nemo</span>
+            </div>
+            <Button variant="outline" className="rounded-xl" onClick={onClose}>
+              Retour au pont
+            </Button>
+          </div>
+        </div>
+
+        <section className="mx-auto max-w-6xl px-4 py-10 space-y-6">
+          <div className="grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
+            <Card className="rounded-3xl ocean-card text-white">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">Ordres du capitaine</h2>
+                  <Badge
+                    variant="outline"
+                    className="rounded-full border-white/20 text-white/70"
+                  >
+                    Prioritaire
+                  </Badge>
+                </div>
+                <div className="space-y-3 text-sm text-white/70">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    Stabiliser la pression avant la zone d'échos.
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    Maintenir l'énergie au-dessus de 60 pendant 2 tours.
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    Préparer un protocole de contact si l'ombre réapparaît.
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl ocean-card text-white">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">Journal privé</h3>
+                  <BookOpen className="h-4 w-4 text-cyan-200" />
+                </div>
+                <p className="text-sm text-white/70 leading-relaxed">
+                  Les abysses répondent à nos décisions. Chaque membre croit
+                  tenir sa vérité, mais l'histoire complète se cache derrière
+                  une suite d'actes cohérents.
+                </p>
+                <p className="text-xs text-white/50">
+                  Dernière mise à jour : 06:40
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Card className="rounded-2xl ocean-card text-white">
+              <CardContent className="p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-cyan-200" />
+                  <h4 className="font-semibold">Classement secret</h4>
+                </div>
+                <div className="space-y-2 text-sm">
+                  {[
+                    { name: "Officier R.", score: 1220 },
+                    { name: "Navigateur I.", score: 1114 },
+                    { name: "Capitaine N.", score: 1098 },
+                  ].map((entry, index) => (
+                    <div
+                      key={entry.name}
+                      className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                    >
+                      <span>
+                        {index + 1}. {entry.name}
+                      </span>
+                      <span className="text-white/70">{entry.score}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl ocean-card text-white">
+              <CardContent className="p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Compass className="h-4 w-4 text-cyan-200" />
+                  <h4 className="font-semibold">Carte secrète</h4>
+                </div>
+                <p className="text-sm text-white/70">
+                  Un corridor abyssal s'ouvre au sud. Nemo recommande une
+                  approche lente pour observer les signaux faibles.
+                </p>
+                <Badge
+                  variant="outline"
+                  className="rounded-full border-white/20 text-white/70"
+                >
+                  Accès niveau 4
+                </Badge>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl ocean-card text-white">
+              <CardContent className="p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Waves className="h-4 w-4 text-cyan-200" />
+                  <h4 className="font-semibold">Fragments scellés</h4>
+                </div>
+                <p className="text-sm text-white/70">
+                  Trois fragments restent verrouillés. L'équilibre du Nautilus
+                  déterminera l'accès final.
+                </p>
+                <Button variant="outline" className="rounded-xl">
+                  Déverrouiller
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 function AccessGate({ onSubmit }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [cabinOpen, setCabinOpen] = useState(false);
+  const [cabinCode, setCabinCode] = useState("");
+  const [cabinError, setCabinError] = useState("");
+  const [cabinUnlocked, setCabinUnlocked] = useState(false);
 
   const canContinue =
     firstName.trim().length > 1 &&
     lastName.trim().length > 1 &&
     email.includes("@") &&
     email.includes(".");
+
+  const canOpenCabin = cabinCode.length === 6;
 
   const handleSubmit = () => {
     const payload = {
@@ -646,6 +791,21 @@ function AccessGate({ onSubmit }) {
     notifyAccess(payload);
     onSubmit(payload);
   };
+
+  const handleCabinSubmit = () => {
+    if (cabinCode === CAPTAIN_CABIN_CODE) {
+      setCabinUnlocked(true);
+      setCabinOpen(false);
+      setCabinError("");
+      setCabinCode("");
+      return;
+    }
+    setCabinError("Code invalide. Vérifiez les 6 chiffres.");
+  };
+
+  if (cabinUnlocked) {
+    return <CaptainCabin onClose={() => setCabinUnlocked(false)} />;
+  }
 
   return (
     <div className="min-h-screen ocean-skin ocean-bg text-foreground relative overflow-hidden">
@@ -663,9 +823,26 @@ function AccessGate({ onSubmit }) {
               <Anchor className="h-5 w-5" />
               <span className="font-semibold">Nautilus — Protocole Nemo</span>
             </div>
-            <Badge variant="secondary" className="rounded-full bg-white/10 text-white">
-              Accès narratif
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="secondary"
+                className="rounded-full bg-white/10 text-white"
+              >
+                Accès narratif
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-xl border-white/30 text-white"
+                onClick={() => {
+                  setCabinOpen(true);
+                  setCabinError("");
+                }}
+              >
+                <KeyRound className="h-4 w-4" />
+                Cabine du capitaine Nemo
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -736,7 +913,7 @@ function AccessGate({ onSubmit }) {
                     Curiosité : Intrépide
                   </Badge>
                 </div>
-                <p className="text-sm text-white/70 leading-relaxed">
+                <p className="text-sm text-white/70 leading-relaxed font-mono">
                   À 1320 mètres, nos capteurs ont détecté un signal lumineux
                   dans l'obscurité. Navigateur, calculez une route d'évitement :
                   les courants se renforcent à l'est. Mission : identifiez
@@ -830,7 +1007,10 @@ function AccessGate({ onSubmit }) {
               <Card className="rounded-3xl ocean-card text-white">
                 <CardContent className="p-6 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Top explorateurs</h3>
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-cyan-200" />
+                      <h3 className="font-semibold">Top explorateurs</h3>
+                    </div>
                     <Badge
                       variant="outline"
                       className="rounded-full border-white/20 text-white/70"
@@ -862,7 +1042,10 @@ function AccessGate({ onSubmit }) {
               <Card className="rounded-3xl ocean-card text-white">
                 <CardContent className="p-6 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Rôles disponibles</h3>
+                    <div className="flex items-center gap-2">
+                      <Crown className="h-4 w-4 text-cyan-200" />
+                      <h3 className="font-semibold">Rôles disponibles</h3>
+                    </div>
                     <Badge
                       variant="outline"
                       className="rounded-full border-white/20 text-white/70"
@@ -892,6 +1075,67 @@ function AccessGate({ onSubmit }) {
           </div>
         </section>
       </div>
+
+      {cabinOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center px-4">
+          <Card className="w-full max-w-md rounded-2xl ocean-card text-white">
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-1">
+                <p className="text-sm text-cyan-100/80">Accès sécurisé</p>
+                <h3 className="text-xl font-semibold">
+                  Cabine du capitaine Nemo
+                </h3>
+                <p className="text-sm text-white/60">
+                  Saisissez le code à 6 chiffres pour accéder aux archives.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cabin-code">Code</Label>
+                <Input
+                  id="cabin-code"
+                  inputMode="numeric"
+                  value={cabinCode}
+                  onChange={(event) => {
+                    const digits = event.target.value.replace(/\D/g, "").slice(0, 6);
+                    setCabinCode(digits);
+                    setCabinError("");
+                  }}
+                  placeholder="000000"
+                  className="bg-white/10 text-white placeholder:text-white/50 border-white/10 tracking-[0.3em] text-center"
+                />
+                {cabinError && (
+                  <p className="text-xs text-rose-200">{cabinError}</p>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1 rounded-xl"
+                  onClick={handleCabinSubmit}
+                  disabled={!canOpenCabin}
+                >
+                  Ouvrir la cabine
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl"
+                  onClick={() => {
+                    setCabinOpen(false);
+                    setCabinCode("");
+                    setCabinError("");
+                  }}
+                >
+                  Annuler
+                </Button>
+              </div>
+              <p className="text-xs text-white/50">
+                Accès réservé au capitaine et à l'état-major.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
