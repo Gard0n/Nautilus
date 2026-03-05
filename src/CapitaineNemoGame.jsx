@@ -70,35 +70,35 @@ const STORY = [
     unlockLevel: 1,
     title: "Chapitre 1 — Le silence bleu",
     text:
-      "Le Nautilus glisse sous la banquise. Un message codé, gravé sur une plaque d'ambre, clignote dans la salle des cartes.",
+      "Le Nautilus glisse sous la banquise. Vous découvrez un message codé, gravé sur une plaque d'ambre qui pulse faiblement. Nemo vous confie la clef : seule une suite d'actions coordonnées peut révéler l'origine du signal.",
   },
   {
     id: "chap-2",
     unlockLevel: 2,
     title: "Chapitre 2 — La chambre des échos",
     text:
-      "Une cavité résonne comme un orgue. Des ondes s'y propagent sans retour. L'équipage parle d'une ville engloutie.",
+      "Vous plongez dans une cavité qui résonne comme un orgue. Les ondes s'y propagent sans retour et l'équipage murmure l'existence d'une ville engloutie. Votre rôle devient décisif : suivre l'écho ou protéger la mission.",
   },
   {
     id: "chap-3",
     unlockLevel: 3,
     title: "Chapitre 3 — Le pacte des abysses",
     text:
-      "Un journal de bord inconnu mentionne un pacte rompu. Nemo hésite : faut-il réveiller un protocole ancien ?",
+      "Un journal de bord inconnu mentionne un pacte rompu entre un précédent capitaine et une présence abyssale. Nemo hésite : faut-il réveiller un protocole ancien ? Vous devez choisir entre sécurité immédiate et vérité.",
   },
   {
     id: "chap-4",
     unlockLevel: 4,
     title: "Chapitre 4 — L'ombre qui suit",
     text:
-      "Le sonar dessine une silhouette gigantesque. Elle n'attaque pas. Elle accompagne. Pourquoi ?",
+      "Le sonar dessine une silhouette gigantesque. Elle n'attaque pas, elle accompagne. Vous sentez que l'ombre attend un signe : un cap, un message, un geste. La décision vous appartient.",
   },
   {
     id: "chap-5",
     unlockLevel: 5,
     title: "Chapitre 5 — La vérité des moteurs",
     text:
-      "Un schéma caché sous les turbines révèle une source d'énergie interdite. Qui l'a installée ?",
+      "Un schéma caché sous les turbines révèle une source d'énergie interdite. Qui l'a installée et pourquoi ? Vous découvrez que le Nautilus est plus qu'un navire : c'est une promesse, et vous devez choisir si elle sera tenue.",
   },
 ];
 
@@ -573,19 +573,19 @@ function AccessGate({ onSubmit }) {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <Card className="rounded-2xl border-white/10 bg-white/5 text-white card-animate">
+                <Card className="rounded-2xl ocean-card-soft text-white card-animate">
                   <CardContent className="p-4">
                     <p className="text-xs text-white/60">Chapitres</p>
                     <p className="text-2xl font-semibold">5</p>
                   </CardContent>
                 </Card>
-                <Card className="rounded-2xl border-white/10 bg-white/5 text-white card-animate">
+                <Card className="rounded-2xl ocean-card-soft text-white card-animate">
                   <CardContent className="p-4">
                     <p className="text-xs text-white/60">Décisions</p>
                     <p className="text-2xl font-semibold">+20</p>
                   </CardContent>
                 </Card>
-                <Card className="rounded-2xl border-white/10 bg-white/5 text-white card-animate">
+                <Card className="rounded-2xl ocean-card-soft text-white card-animate">
                   <CardContent className="p-4">
                     <p className="text-xs text-white/60">Mode</p>
                     <p className="text-2xl font-semibold">Solo</p>
@@ -594,7 +594,7 @@ function AccessGate({ onSubmit }) {
               </div>
             </div>
 
-            <Card className="rounded-3xl border-white/10 bg-white/10 text-white shadow-xl shadow-black/30 backdrop-blur">
+            <Card className="rounded-3xl ocean-card text-white shadow-xl shadow-black/30 backdrop-blur">
               <CardContent className="p-6 space-y-4">
                 <div className="space-y-1">
                   <p className="text-sm text-cyan-100/80">Accès à bord</p>
@@ -966,7 +966,7 @@ export default function CapitaineNemoGame() {
                     {availableActions.length} actions
                   </Badge>
                 </div>
-                <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm">
+                <div className="rounded-xl ocean-card-soft p-3 text-sm">
                   <p className="text-xs text-white/60">Directive du quart</p>
                   <p className="font-medium">{directive.label}</p>
                   <p className="text-xs text-white/60">{directive.description}</p>
@@ -995,7 +995,10 @@ export default function CapitaineNemoGame() {
                               +{action.xp} XP
                             </Badge>
                             {directiveHit && (
-                              <Badge className="rounded-full bg-cyan-200/20 text-cyan-50">
+                              <Badge
+                                variant="outline"
+                                className="rounded-full border-cyan-200/40 bg-cyan-200/10 text-cyan-50"
+                              >
                                 Directive +{directive.bonusXp} XP
                               </Badge>
                             )}
