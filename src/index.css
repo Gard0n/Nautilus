@@ -12,6 +12,43 @@
   --border: 214.3 31.8% 91.4%;
 }
 
+.ocean-skin {
+  --background: 210 60% 8%;
+  --foreground: 210 40% 98%;
+  --muted: 210 38% 18%;
+  --muted-foreground: 210 20% 75%;
+  --border: 210 35% 25%;
+}
+
+.ocean-bg {
+  background-color: hsl(var(--background));
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(56, 189, 248, 0.25), transparent 45%),
+    radial-gradient(circle at 80% 20%, rgba(45, 212, 191, 0.18), transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.15), transparent 55%),
+    linear-gradient(180deg, rgba(7, 19, 30, 0.9), rgba(6, 12, 20, 0.95));
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.float-slow {
+  animation: float 12s ease-in-out infinite;
+}
+
+.float-slower {
+  animation: float 18s ease-in-out infinite;
+}
+
 * {
   box-sizing: border-box;
 }

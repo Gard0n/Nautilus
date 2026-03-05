@@ -356,14 +356,18 @@ const getInitialUnlocked = () =>
 function RoleCard({ role, active, onSelect }) {
   const Icon = role.icon;
   return (
-    <Card className={`rounded-xl border ${active ? "border-foreground" : "border-border"}`}>
+    <Card
+      className={`rounded-xl border ${
+        active ? "border-cyan-200/60" : "border-white/10"
+      } bg-white/5 text-white`}
+    >
       <CardContent className="p-4 space-y-2">
         <div className="flex items-center gap-2">
           <Icon className="h-4 w-4" />
           <span className="font-medium">{role.name}</span>
         </div>
-        <p className="text-sm text-muted-foreground">{role.tagline}</p>
-        <Badge variant="secondary" className="rounded-full">
+        <p className="text-sm text-white/70">{role.tagline}</p>
+        <Badge variant="secondary" className="rounded-full bg-white/10 text-white">
           {role.perk}
         </Badge>
         <Button onClick={() => onSelect(role)} className="w-full rounded-xl">
@@ -398,98 +402,168 @@ function AccessGate({ onSubmit }) {
     email.includes(".");
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="border-b">
-        <div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2">
-            <Anchor className="h-5 w-5" />
-            <span className="font-semibold">Nautilus — Accès sécurisé</span>
-          </div>
-          <Badge variant="secondary" className="rounded-full">
-            Entrée contrôlée
-          </Badge>
-        </div>
+    <div className="min-h-screen ocean-skin ocean-bg text-foreground relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-cyan-400/20 blur-[120px]" />
+        <div className="absolute top-24 right-16 h-28 w-28 rounded-full border border-cyan-200/30 float-slow" />
+        <div className="absolute bottom-20 left-12 h-16 w-16 rounded-full border border-teal-200/30 float-slower" />
+        <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-slate-950/80 to-transparent" />
       </div>
 
-      <section className="mx-auto max-w-3xl px-4 py-12 space-y-6">
-        <div className="space-y-3">
-          <h1 className="text-3xl font-semibold">
-            Accès à bord
-          </h1>
-          <p className="text-muted-foreground">
-            Le journal du Nautilus exige une identité claire avant d'ouvrir
-            l'interface de mission.
-          </p>
+      <div className="relative">
+        <div className="border-b border-white/10">
+          <div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-4">
+            <div className="flex items-center gap-2">
+              <Anchor className="h-5 w-5" />
+              <span className="font-semibold">Nautilus — Protocole Nemo</span>
+            </div>
+            <Badge variant="secondary" className="rounded-full bg-white/10 text-white">
+              Accès narratif
+            </Badge>
+          </div>
         </div>
 
-        <Card className="rounded-2xl">
-          <CardContent className="p-6 space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">Prénom</Label>
-                <Input
-                  id="firstName"
-                  value={firstName}
-                  onChange={(event) => setFirstName(event.target.value)}
-                  placeholder="Ex: Inès"
-                />
+        <section className="mx-auto max-w-6xl px-4 py-12">
+          <div className="grid gap-10 lg:grid-cols-[1.2fr,0.8fr] items-center">
+            <div className="space-y-6">
+              <Badge className="rounded-full bg-cyan-200/20 text-cyan-50">
+                Expédition 20 000 lieues
+              </Badge>
+              <h1 className="text-4xl font-semibold leading-tight">
+                Entrez dans la salle des décisions du Nautilus.
+              </h1>
+              <p className="text-lg text-white/70">
+                Une expérience solo moderne, inspirée de Jules Verne. Chaque
+                action déclenche une réaction d'équipage, chaque niveau dévoile
+                une nouvelle partie de l'histoire.
+              </p>
+
+              <div className="flex flex-wrap gap-3">
+                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm">
+                  <Compass className="h-4 w-4 text-cyan-200" />
+                  6 rôles complémentaires
+                </div>
+                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm">
+                  <Waves className="h-4 w-4 text-cyan-200" />
+                  Hub tactique en continu
+                </div>
+                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm">
+                  <Sparkles className="h-4 w-4 text-cyan-200" />
+                  Histoire débloquée par niveau
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Nom</Label>
-                <Input
-                  id="lastName"
-                  value={lastName}
-                  onChange={(event) => setLastName(event.target.value)}
-                  placeholder="Ex: Morel"
-                />
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Card className="rounded-2xl border-white/10 bg-white/5 text-white">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-white/60">Chapitres</p>
+                    <p className="text-2xl font-semibold">5</p>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-2xl border-white/10 bg-white/5 text-white">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-white/60">Décisions</p>
+                    <p className="text-2xl font-semibold">+20</p>
+                  </CardContent>
+                </Card>
+                <Card className="rounded-2xl border-white/10 bg-white/5 text-white">
+                  <CardContent className="p-4">
+                    <p className="text-xs text-white/60">Mode</p>
+                    <p className="text-2xl font-semibold">Solo</p>
+                  </CardContent>
+                </Card>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="votre@email.com"
-              />
             </div>
 
-            <Button
-              className="w-full rounded-xl"
-              onClick={() => onSubmit({ firstName, lastName, email })}
-              disabled={!canContinue}
-            >
-              Accéder au Nautilus
-            </Button>
-          </CardContent>
-        </Card>
-      </section>
+            <Card className="rounded-3xl border-white/10 bg-white/10 text-white shadow-xl shadow-black/30 backdrop-blur">
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-1">
+                  <p className="text-sm text-cyan-100/80">Accès à bord</p>
+                  <h2 className="text-2xl font-semibold">
+                    Identifiez-vous pour embarquer
+                  </h2>
+                  <p className="text-sm text-white/60">
+                    Votre identité débloque le journal de mission et le hub
+                    tactique.
+                  </p>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">Prénom</Label>
+                    <Input
+                      id="firstName"
+                      value={firstName}
+                      onChange={(event) => setFirstName(event.target.value)}
+                      placeholder="Ex: Inès"
+                      className="bg-white/10 text-white placeholder:text-white/50 border-white/10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Nom</Label>
+                    <Input
+                      id="lastName"
+                      value={lastName}
+                      onChange={(event) => setLastName(event.target.value)}
+                      placeholder="Ex: Morel"
+                      className="bg-white/10 text-white placeholder:text-white/50 border-white/10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="votre@email.com"
+                    className="bg-white/10 text-white placeholder:text-white/50 border-white/10"
+                  />
+                </div>
+
+                <Button
+                  className="w-full rounded-xl"
+                  onClick={() => onSubmit({ firstName, lastName, email })}
+                  disabled={!canContinue}
+                >
+                  Accéder au Nautilus
+                </Button>
+
+                <p className="text-xs text-white/50">
+                  Aucun spam. Vous recevez uniquement les fragments narratifs
+                  liés à la mission.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
 
 function RoleSelection({ user, onSelect }) {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="border-b">
+    <div className="min-h-screen ocean-skin ocean-bg text-foreground">
+      <div className="border-b border-white/10">
         <div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-2">
             <Anchor className="h-5 w-5" />
             <span className="font-semibold">Nautilus — Sélection du poste</span>
           </div>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-white/60">
             {user.firstName} {user.lastName} • {user.email}
           </div>
         </div>
       </div>
 
-      <section className="mx-auto max-w-6xl px-4 py-10 space-y-6">
+      <section className="mx-auto max-w-6xl px-4 py-10 space-y-6 relative">
         <div className="space-y-3">
           <h1 className="text-3xl font-semibold">
             Choisissez un rôle et pilotez la mission du Nautilus
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-white/70">
             Un hub immersif où chaque action crée des conséquences. Chaque
             niveau débloque un fragment d'histoire.
           </p>
